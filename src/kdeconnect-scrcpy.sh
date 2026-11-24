@@ -8,6 +8,11 @@ list() { adb devices | awk 'NR>1 && $2=="device" {print $1}'; }
 [ -t 2 ] || exec &> >(systemd-cat -t kdeconnect-scrcpy)
 echo "start"
 
+# after a network change adb keeps listing the dead wireless transport as "device"; scrcpy would hang on it
+for s in $(list | grep _adb-tls); do
+    timeout 3 adb -s "$s" shell true >/dev/null 2>&1 || adb disconnect "$s" >/dev/null 2>&1
+done
+
 devices=$(list)
 # adb's own mDNS auto-connect misses phones whose adbd restarted, so connect paired services explicitly
 for _ in 1 2 3 4 5; do
