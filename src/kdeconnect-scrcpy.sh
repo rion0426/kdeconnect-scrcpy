@@ -4,6 +4,9 @@
 
 notify() { notify-send -a "KDE Connect" -i phone "Share Screen" "$1"; }
 list() { adb devices | awk 'NR>1 && $2=="device" {print $1}'; }
+# launched from the tray the output is discarded; send it to `journalctl --user -t kdeconnect-scrcpy`
+[ -t 2 ] || exec &> >(systemd-cat -t kdeconnect-scrcpy)
+echo "start"
 
 devices=$(list)
 # adb's own mDNS auto-connect misses phones whose adbd restarted, so connect paired services explicitly

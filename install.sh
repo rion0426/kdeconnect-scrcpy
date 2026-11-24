@@ -42,5 +42,7 @@ Type=Application
 Categories=Utility;RemoteAccess;
 EOF
 
+# a plasmashell started outside systemd would keep the old QML and make the unit exit at once
+kquitapp6 plasmashell 2>/dev/null || true
 systemctl --user restart plasma-plasmashell.service
 echo "Installed. KDE Connect tray -> phone -> ⋮ -> Share Screen."
