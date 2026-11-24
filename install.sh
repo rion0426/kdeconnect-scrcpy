@@ -1,58 +1,46 @@
 #!/bin/bash
+# Installs kdeconnect-scrcpy. Re-run after every KDE Connect update: the tray applet override
+# is rebuilt from the system copy, so it never goes stale.
+set -euo pipefail
+cd "$(dirname "$0")"
 
-# KDE Connect + Scrcpy Integration Installer
-# Author: Mahmudjon Murodov
-
-echo "🚀 Starting KDE Connect + Scrcpy Integration Setup..."
-
-# 1. Check dependencies
-echo "🔍 Checking dependencies..."
-for cmd in scrcpy adb kdeconnect-cli; do
-    if ! command -v $cmd &> /dev/null; then
-        echo "❌ $cmd not found! Please install it first."
-        exit 1
-    fi
+for cmd in scrcpy adb kdeconnect-cli notify-send; do
+    command -v "$cmd" >/dev/null || { echo "$cmd not found, install it first." >&2; exit 1; }
 done
 
-# 2. Create local bin and copy script
-echo "📂 Setting up scripts..."
-mkdir -p "$HOME/bin"
-cp src/phone.sh "$HOME/bin/phone"
-chmod +x "$HOME/bin/phone"
+BIN="$HOME/.local/bin/kdeconnect-scrcpy"
+SYS_PLASMOID=/usr/share/plasma/plasmoids/org.kde.kdeconnect
+PLASMOID="$HOME/.local/share/plasma/plasmoids/org.kde.kdeconnect"
+QML="$PLASMOID/contents/ui/DeviceDelegate.qml"
 
-# 3. Add ~/bin to PATH if not present
-if [[ ":$PATH:" != *":$HOME/bin:"* ]]; then
-    echo "📝 Adding ~/bin to .bashrc..."
-    echo 'export PATH="$HOME/bin:$PATH"' >> "$HOME/.bashrc"
-    echo "Please restart your terminal or run 'source ~/.bashrc' after installation."
-fi
+install -Dm755 src/kdeconnect-scrcpy.sh "$BIN"
 
-# 4. Patch KDE Connect UI
-echo "🎨 Patching KDE Connect UI..."
-PLASMOID_DIR="$HOME/.local/share/plasma/plasmoids/org.kde.kdeconnect"
-SYS_PLASMOID="/usr/share/plasma/plasmoids/org.kde.kdeconnect"
+rm -rf "$PLASMOID"
+mkdir -p "$(dirname "$PLASMOID")"
+cp -r "$SYS_PLASMOID" "$PLASMOID"
 
-mkdir -p "$PLASMOID_DIR"
-cp -r "$SYS_PLASMOID/"* "$PLASMOID_DIR/"
-cp src/DeviceDelegate.qml "$PLASMOID_DIR/contents/ui/DeviceDelegate.qml"
+# Patch the current system QML instead of shipping a copy tied to one KDE Connect version.
+for anchor in '^import org.kde.plasma.extras as PlasmaExtras$' '^    id: root$' '^        id: menu$'; do
+    [ "$(grep -c "$anchor" "$QML")" = 1 ] || { rm -rf "$PLASMOID"; echo "DeviceDelegate.qml changed upstream ($anchor), patch needs updating." >&2; exit 1; }
+done
+sed -i \
+    -e '/^import org.kde.plasma.extras as PlasmaExtras$/a import org.kde.plasma.plasma5support as Plasma5Support' \
+    -e "/^    id: root\$/r src/datasource.qml" \
+    -e "/^        id: menu\$/r src/menuitem.qml" \
+    "$QML"
+sed -i "s|@BIN@|$BIN|" "$QML"
 
-# 5. Add Desktop Entry
-echo "🖥️ Adding Application Menu entry..."
 mkdir -p "$HOME/.local/share/applications"
-cat <<EOF > "$HOME/.local/share/applications/phone-mirror.desktop"
+cat >"$HOME/.local/share/applications/kdeconnect-scrcpy.desktop" <<EOF
 [Desktop Entry]
 Name=Phone Mirror (scrcpy)
-Exec=$HOME/bin/phone
+Comment=Mirror the KDE Connect phone with scrcpy
+Exec=$BIN
 Icon=phone
 Terminal=false
 Type=Application
 Categories=Utility;RemoteAccess;
-Comment=Mirror Android screen via scrcpy and KDE Connect
 EOF
 
-echo "✅ Done!"
-echo "🔄 Refreshing Plasma..."
-killall plasmashell && kstart6 plasmashell &
-
-echo "🎉 Installation complete!"
-echo "👉 Now click the KDE Connect icon in your system tray, click the 3 dots menu of your phone, and select 'Share Screen'."
+systemctl --user restart plasma-plasmashell.service
+echo "Installed. KDE Connect tray -> phone -> ⋮ -> Share Screen."

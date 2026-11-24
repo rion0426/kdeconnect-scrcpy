@@ -1,40 +1,23 @@
-# KDE Connect + Scrcpy Integration
+# kdeconnect-scrcpy
 
-Add a "Share Screen" button directly into your KDE Connect system tray menu! 🚀
-
-This project integrates [scrcpy](https://github.com/Genymobile/scrcpy) with [KDE Connect](https://kdeconnect.kde.org/) to allow one-click screen mirroring of your Android device.
-
-## Features
-- **One-click mirroring:** Added a "Share Screen" option to the KDE Connect menu.
-- **Automatic IP detection:** Uses KDE Connect to find your phone's IP address.
-- **High quality:** Optimized scrcpy settings (12M bitrate, 60 FPS).
-- **Application Shortcut:** "Phone Mirror" entry in your application launcher.
+Adds a **Share Screen** item to the KDE Connect tray menu (⋮ next to the phone) that mirrors the phone with [scrcpy](https://github.com/Genymobile/scrcpy).
+Fork of [MAKHMUDuz/kdeconnect-scrcpy](https://github.com/MAKHMUDuz/kdeconnect-scrcpy).
 
 ## Requirements
-- KDE Plasma 6
-- `scrcpy`
-- `android-tools` (for adb)
-- `kdeconnect`
+KDE Plasma 6, `kdeconnect`, `scrcpy`, `android-tools` (adb), `libnotify`.
 
-## Installation
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/MAKHMUDuz/kdeconnect-scrcpy.git
-   cd kdeconnect-scrcpy
-   ```
-2. Run the installer:
-   ```bash
-   chmod +x install.sh
-   ./install.sh
-   ```
+## Install
+```bash
+./install.sh     # re-run after every KDE Connect update
+./uninstall.sh
+```
+Installs `~/.local/bin/kdeconnect-scrcpy` and a tray applet override in
+`~/.local/share/plasma/plasmoids/org.kde.kdeconnect`, patched from the current system copy.
 
-## Usage
-1. Connect your phone via USB once and run `adb tcpip 5555`.
-2. Ensure your phone is connected to KDE Connect.
-3. Click the KDE Connect icon in your system tray.
-4. Click the "overflow" (3 dots) menu next to your device.
-5. Select **Share Screen**.
+## Connecting on any network
+The script tries, in order: USB → `<IP from KDE Connect>:5555` → wireless debugging (adb mDNS).
+Whenever it reaches the phone it switches adbd to TCP port 5555, so later runs work on **any
+Wi-Fi where KDE Connect sees the phone** — until the phone reboots. After a reboot, plug in USB
+once (or have Wireless debugging on) and press Share Screen; that re-arms it.
 
----
-Developed by **Mahmudjon Murodov**
-Last modified: 2026-11-20
+Port 5555 still needs this PC's adb key to be authorized on the phone.
