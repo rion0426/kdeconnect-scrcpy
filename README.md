@@ -21,3 +21,9 @@ with pairing code*, then `adb pair <ip>:<port>`. On a new Wi-Fi, allow wireless 
 phone ("Always allow on this network"); networks that block multicast won't work.
 
 Unencrypted `adb tcpip` (IP:5555) connections are deliberately never used.
+
+## Korean input
+The keyboard is sent as a physical HID keyboard (`--keyboard=uhid`), so the phone's IME does the
+composing. Once on the phone: Settings → General management → Physical keyboard → layout
+*Korean*. Switch 한/영 on the phone with **Shift+Space**; keep the PC IME (fcitx5) in English
+mode in the mirror window.

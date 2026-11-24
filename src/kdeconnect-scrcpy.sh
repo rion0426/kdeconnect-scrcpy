@@ -26,5 +26,6 @@ if [ -z "$serial" ]; then
     exit 1
 fi
 
-scrcpy -s "$serial" --video-bit-rate=12M --max-fps=60 --window-title="Phone Mirror" ||
+# uhid: the phone sees a physical keyboard and its own IME composes Hangul (sdk mode can't inject it)
+scrcpy -s "$serial" --keyboard=uhid --video-bit-rate=12M --max-fps=60 --window-title="Phone Mirror" ||
     notify "scrcpy failed on adb device '$serial'."
